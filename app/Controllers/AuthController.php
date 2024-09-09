@@ -69,7 +69,7 @@ class AuthController {
     
         $email = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
         $password = $data['password'];
-        $name = filter_var($data['username'], FILTER_SANITIZE_STRING); // Agregado para sanitizar el nombre
+        $name = htmlspecialchars($data['username'], ENT_QUOTES, 'UTF-8');
     
         try {
             // Verificar si el usuario ya existe

@@ -18,7 +18,7 @@ $router->map('GET', '/register', function() {
 });
 
 $router->map('GET', '/', function() {
-    echo file_get_contents(__DIR__ . '/../app/Views/login/login.html');
+    echo file_get_contents(__DIR__ . '/../app/Views/Login/login.html');
 });
 
 $router->map('GET', '/home', function() {
@@ -37,7 +37,7 @@ $router->map('GET', '/home', function() {
         echo "<script>window.location.href = '/';</script>";
         return;
     }
-    require __DIR__ . '/../app/Views/home/home.html';
+    require __DIR__ . '/../app/Views/Home/home.html';
 });
 
 $router->map('POST', '/api/login', function() {
@@ -91,6 +91,15 @@ $router->map('GET', '/api/weather', function() {
     }
 });
 
+$router->map('GET', '/api/lastTemperature', function() {
+    try {
+        $weatherApiController = new WeatherApiController();
+        $weatherApiController->getLastTemperature($_GET['city']);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    }
+});
 $router->map('GET', '/api/weatherHistory', function() {
     try {
         $weatherApiController = new WeatherApiController();

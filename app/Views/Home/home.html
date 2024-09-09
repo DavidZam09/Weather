@@ -1,14 +1,14 @@
 <!DOCTYPE html>
+<!--Home-->
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Halley</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvJJFiwx8f" crossorigin="anonymous">
     <style>
-        body {
+       body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
@@ -16,7 +16,7 @@
             flex-direction: column;
             align-items: center;
             height: 100vh;
-            background-color: #f0f0f0;
+            background-color: #87CEEB; /* Changed to a darker and more striking background */
         }
 
         .menu {
@@ -26,8 +26,12 @@
             display: flex;
             justify-content: space-between;
             padding: 10px;
-            background-color: #fff;
+            background-color: #444; /* Changed to a darker and more striking background */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .menu button {
+            margin-left: 0.5rem;
+            margin-right: 0.5rem;
         }
 
         .container {
@@ -35,22 +39,24 @@
             flex-direction: column;
             align-items: center;
             margin-top: 60px; /* Adjusted to center below the menu */
-            background-color: white;
+            background-color: rgba(85, 85, 85, 0.8); /* Adjusted for transparency */
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             text-align: center;
             max-width: 90%;
             width: 400px;
+            color: #fff;
         }
 
         h1 {
-            color: #333;
+            color: #fff; /* Changed to white for better contrast */
         }
 
         #location {
             margin-top: 20px;
             font-size: 18px;
+            color: #fff; /* Changed to white for better contrast */
         }
 
         #map {
@@ -90,13 +96,16 @@
         }
 
         #weather-data h2 {
-            color: #333;
+            color: #fff; /* Changed to white for better contrast */
         }
 
         #weather-data p {
             font-size: 18px;
+            color: #fff; /* Changed to white for better contrast */
         }
-
+        #clock {
+            color: #fff;
+        }
         @media (max-width: 480px) {
             .container {
                 width: 95%;
@@ -108,6 +117,7 @@
                 right: 0;
                 width: 100%;
                 justify-content: flex-end;
+                
             }
         }
     </style>
@@ -134,6 +144,8 @@
         </div>
 
     </div>
+
+    <div id="notification" style="display: none; position: fixed; top: 10px; right: 10px; background-color: #444; color: #fff; padding: 10px; border-radius: 5px; z-index: 1000;"></div>
 
     <script>
       
@@ -252,53 +264,77 @@
 
         // Function to get weather data
         function getWeatherData(city) {
+            // Show loader
+            const weatherDataDiv = document.getElementById('weather-data');
+            weatherDataDiv.innerHTML = '<p>Cargando...</p>';
+
             fetch(`/api/weather?city=${city}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.cod === 200) {
-                        // Extract relevant data
-                        const temperature = data.main.temp; // Temperature
-                        const description = data.weather[0].description; // Climate description
-                        const cityName = data.name; // City name
-                        const country = data.sys.country; // Country
-                        const icon = data.weather[0].icon; // Icon
-                        // Insert data into the weather-data div
-                        const weatherDataDiv = document.getElementById('weather-data');
-                        weatherDataDiv.innerHTML = `
+            .then(response => response.json())
+            .then(data => {
+                if (data.cod === 200) {
+                    // Extract relevant data
+                    const temperature = data.main.temp; // Temperature
+                    const description = data.weather[0].description; // Climate description
+                    const cityName = data.name; // City name
+                    const country = data.sys.country; // Country
+                    const icon = data.weather[0].icon; // Icon
+                    // Insert data into the weather-data div
+                    const weatherDataDiv = document.getElementById('weather-data');
+                    weatherDataDiv.innerHTML = `
                 <h2>Clima en ${cityName}</h2>
                 <img src="http://openweathermap.org/img/wn/${icon}.png" alt="Weather Icon">
                 <p>Temperatura: ${temperature}°C</p>
                 <p>Descripcion: ${description}</p>
                 `;
 
-                       
-                        // Automatically insert weather data
-                        globalWeatherData = {
-                            temperature,
-                            description,
-                            cityName,
-                            country,
-                            icon
-                        };
-                        insertWeatherData(globalWeatherData);
+                    // Automatically insert weather data
+                    globalWeatherData = {
+                        temperature,
+                        description,
+                        cityName,
+                        country,
+                        icon
+                    };
+                    insertWeatherData(globalWeatherData);
 
-                    } else {
-                        console.error('Error getting weather data:', data.message);
-                        const weatherDataDiv = document.getElementById('weather-data');
-                        weatherDataDiv.innerHTML = `<p>Error: ${data.message}</p>`;
+                    // Check for significant temperature change
+                    checkTemperatureChange(cityName, temperature);
+
+                    showNotification('Datos del clima obtenidos con éxito.');
+                } else {
+                    showNotification(`Error: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error getting weather data:', error);
+                showNotification('Error al obtener los datos. Intenta de nuevo.');
+            });
+        }
+
+        // Function to check for significant temperature change
+        function checkTemperatureChange(city, temperature) {
+            // Assuming there's a function to fetch the last recorded temperature for a city
+            fetch(`/api/lastTemperature?city=${city}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        const lastTemperature = data.temperature;
+                        const difference = Math.abs(lastTemperature - temperature);
+                        if (difference >= 2) {
+                            showNotification(`Cambio significativo de temperatura en ${city}: ${difference}°C.`);
+                        }
                     }
                 })
                 .catch(error => {
-                    console.error('Error getting weather data:', error);
-                    const weatherDataDiv = document.getElementById('weather-data');
-                    weatherDataDiv.innerHTML = `<p>Error getting the data. Try again.</p>`;
+                    console.error('Error fetching last temperature:', error);
                 });
         }
+
         function updateClock() {
             const now = new Date();
             const hours = now.getHours();
@@ -313,8 +349,12 @@
 
         document.getElementById("weather-form").addEventListener('submit', function (e) {
             e.preventDefault();
-            const city = document.getElementById("city").value;
-            getWeatherData(city);
+            const city = document.getElementById("city").value.trim();
+            if (city) {
+                getWeatherData(city);
+            } else {
+                showNotification('Por favor, ingresa un nombre de ciudad válido.');
+            }
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"

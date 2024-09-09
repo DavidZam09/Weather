@@ -67,6 +67,19 @@
             border-radius: 5px;
             display: none;
         }
+        .spinner {
+            display: none;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #007bff;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -80,11 +93,13 @@
         </form>
         <div id="message"></div>
         <div class="toast" id="toast"></div>
+        <div class="spinner" id="spinner"></div>
     </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            document.getElementById('spinner').style.display = 'block'; // Mostrar spinner
             
             const email = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -98,6 +113,7 @@
             })
             .then(response => response.json())
             .then(data => {
+                document.getElementById('spinner').style.display = 'none'; // Ocultar spinner
                 if (data.success) {
                     // Redirigir al usuario o actualizar la interfaz según sea necesario
                     setTimeout(() => {
@@ -115,6 +131,7 @@
                 }
             })
             .catch(error => {
+                document.getElementById('spinner').style.display = 'none'; // Ocultar spinner
                 console.error('Error:', error);
                 document.getElementById('message').textContent = 'Ocurrió un error. Por favor, intenta de nuevo.';
                 // Mostrar toast de error

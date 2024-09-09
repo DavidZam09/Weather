@@ -100,7 +100,15 @@ class WeatherApiController
         echo json_encode($weatherData);
         return json_encode($weatherData);
     }
-
+    public function getLastTemperature($city)
+    {
+        $db = $this->db;
+        $stmt = $db->prepare("SELECT temperature FROM weather_data WHERE city_name = :city ORDER BY date_time DESC LIMIT 1");
+        $stmt->bindParam(':city', $city);
+        $stmt->execute();
+        $temperature = $stmt->fetchColumn();
+        echo json_encode(['temperature' => $temperature]);
+    }
     private function makeRequest($url)
     {
         $curl = curl_init();
