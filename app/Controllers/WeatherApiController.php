@@ -11,7 +11,7 @@ class WeatherApiController
 
     public function __construct()
     {
-        $this->apiKey = 'afa432fac0e3519d7b4c65e3731e8f69';
+        $this->apiKey = 'API_KEY';
         $this->baseUrl = 'https://api.openweathermap.org/data/2.5';
         $this->imageUrl = 'https://openweathermap.org/img/wn/';
         require_once __DIR__ . '/../../config/database.php';
