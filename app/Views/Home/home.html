@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Halley</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .menu {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 60px; /* Adjusted to center below the menu */
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #location {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        #map {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        #weather-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #weather-form input {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        #weather-form button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #weather-data {
+            margin-top: 20px;
+            display: block; /* Changed from none to block */
+        }
+
+        #weather-data h2 {
+            color: #333;
+        }
+
+        #weather-data p {
+            font-size: 18px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+            }
+
+            .menu {
+                position: relative;
+                top: 0;
+                right: 0;
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="menu">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+            <button onclick="logout()">Cerrar sesion</button>
+            <div id="clock"></div>
+            <button onclick="window.location.href='/weatherHistory'">Historial de clima</button>
+        </div>
+    </div>
+    <div class="container">
+        <p>Usted esta en:</p>
+        <div id="location">Fetching location...</div>
+        <form id="weather-form">
+            <input type="text" id="city" name="city" placeholder="Enter city name" required>
+            <button type="submit">Ver clima</button>
+        </form>
+
+        <div id="weather-data">
+            <!-- Weather data will be dynamically inserted here -->
+        </div>
+
+    </div>
+
+    <script>
+      
+        // Removed globalCity, globalCountry, and globalWeatherData
+
+        function getLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showCityWithLocation, showError);
+            } else {
+                document.getElementById("location").innerHTML = "Geolocation is not supported by this browser.";
+            }
+        }
+
+        function showCityWithLocation(position) {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`)
+                .then(response => response.json())
+                .then(data => {
+                    const country = data.address.country;
+                    const city = data.address.city;
+                    document.getElementById("location").innerHTML = `${city}, ${country}`;
+                    const cityParts = city.split(' ');
+                    const lastWord = cityParts[cityParts.length - 1];
+                    getWeatherData(lastWord);
+                })
+                .catch(error => {
+                    console.error('Error fetching city:', error);
+                    document.getElementById("location").innerHTML = `Latitude: ${latitude}<br>Longitude: ${longitude}<br>Error fetching city.`;
+                });
+        }
+        function insertWeatherData(weatherData) {
+            
+            fetch('/api/insertWeatherData', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({weatherData}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Weather data inserted successfully.');
+                } else {
+                    console.error('Error inserting weather data:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error inserting weather data:', error);
+            });
+        }
+
+        function showError(error) {
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    document.getElementById("location").innerHTML = "User denied the request for Geolocation.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    document.getElementById("location").innerHTML = "Location information is unavailable.";
+                    break;
+                case error.TIMEOUT:
+                    document.getElementById("location").innerHTML = "The request to get user location timed out.";
+                    break;
+                case error.UNKNOWN_ERROR:
+                    document.getElementById("location").innerHTML = "An unknown error occurred.";
+                    break;
+            }
+        }
+
+        function initMap(latitude, longitude) {
+            const mapOptions = {
+                center: { lat: latitude, lng: longitude },
+                zoom: 14
+            };
+            const map = new google.maps.Map(document.getElementById("map"), mapOptions);
+            new google.maps.Marker({
+                position: { lat: latitude, lng: longitude },
+                map: map,
+                title: "Your Location"
+            });
+        }
+
+        // Load Google Maps API and call getLocation
+        function loadMapScript() {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=getLocation`;
+            script.defer = true;
+            script.async = true;
+            document.head.appendChild(script);
+        }
+
+        // Call loadMapScript when the page loads
+        window.onload = loadMapScript;
+
+        // Logout function
+        function logout() {
+            fetch('/api/logout', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = '/';
+                    } else {
+                        console.error('Error logging out:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error logging out:', error);
+                });
+        }
+
+        // Function to get weather data
+        function getWeatherData(city) {
+            fetch(`/api/weather?city=${city}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.cod === 200) {
+                        // Extract relevant data
+                        const temperature = data.main.temp; // Temperature
+                        const description = data.weather[0].description; // Climate description
+                        const cityName = data.name; // City name
+                        const country = data.sys.country; // Country
+                        const icon = data.weather[0].icon; // Icon
+                        // Insert data into the weather-data div
+                        const weatherDataDiv = document.getElementById('weather-data');
+                        weatherDataDiv.innerHTML = `
+                <h2>Clima en ${cityName}</h2>
+                <img src="http://openweathermap.org/img/wn/${icon}.png" alt="Weather Icon">
+                <p>Temperatura: ${temperature}°C</p>
+                <p>Descripcion: ${description}</p>
+                `;
+
+                       
+                        // Automatically insert weather data
+                        globalWeatherData = {
+                            temperature,
+                            description,
+                            cityName,
+                            country,
+                            icon
+                        };
+                        insertWeatherData(globalWeatherData);
+
+                    } else {
+                        console.error('Error getting weather data:', data.message);
+                        const weatherDataDiv = document.getElementById('weather-data');
+                        weatherDataDiv.innerHTML = `<p>Error: ${data.message}</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error getting weather data:', error);
+                    const weatherDataDiv = document.getElementById('weather-data');
+                    weatherDataDiv.innerHTML = `<p>Error getting the data. Try again.</p>`;
+                });
+        }
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const time = `${hours < 10 ? '0' : ''}${hours}:${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            document.getElementById('clock').innerHTML = time;
+        }
+
+        // Update clock every second
+        setInterval(updateClock, 1000);
+
+        document.getElementById("weather-form").addEventListener('submit', function (e) {
+            e.preventDefault();
+            const city = document.getElementById("city").value;
+            getWeatherData(city);
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"
+        integrity="sha384-7/z6pDLDqZTBapdULZ61F4sq9Fi6SOlxv6GZGPCJ2U+y1VS/GRD5rXbDgj6tPNvZ"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"
+        integrity="sha384-QJHtvGhmr9PwwCE64hsRa2VV6p/7FZLg9zfjEL8Q9PI5zjO77pV/urVpBbs7xX+"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

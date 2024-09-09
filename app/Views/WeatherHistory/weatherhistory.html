@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvJJFiwx8f" crossorigin="anonymous">
+    <style>
+       body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #87CEEB; /* Changed to a sky blue color for contrast with grey */
+        }
+
+        .menu {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #444; /* Changed to a darker and more striking background */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 60px; /* Adjusted to center below the menu */
+            background-color: #555; /* Changed to a darker and more striking background */
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 90%;
+            width: 400px;
+        }
+
+        h1 {
+            color: #fff; /* Changed to white for better contrast */
+        }
+
+        #location {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #fff; /* Changed to white for better contrast */
+        }
+
+        #map {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+
+        #weather-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        #weather-form input {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        #weather-form button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #weather-data {
+            margin-top: 20px;
+            display: block; /* Changed from none to block */
+        }
+
+        #weather-data h2 {
+            color: #fff; /* Changed to white for better contrast */
+        }
+
+        #weather-data p {
+            font-size: 18px;
+            color: #fff; /* Changed to white for better contrast */
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                width: 95%;
+            }
+
+            .menu {
+                position: relative;
+                top: 0;
+                right: 0;
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+        .weather-history {
+            margin-top: 20px;
+        }
+        .weather-history .card {
+            margin-bottom: 20px;
+        }
+        .weather-history .card .card-body {
+            padding: 10px;
+        }
+        .weather-history .card .card-body h5 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+            <button onclick="logout()">Cerrar sesion</button>
+            <button onclick="window.location.href='/home'">Home</button>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Weather History</h1>
+        <div class="weather-history">
+            <!-- Weather history cards will be dynamically inserted here -->
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/weatherHistory')
+                .then(response => response.json())
+                .then(data => {
+                    const weatherHistoryDiv = document.querySelector('.weather-history');
+                    data.forEach(history => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div class="card-body">
+                                <h5 class="card-title">${history.city_name}, ${history.country}</h5>
+                                <img src="http://openweathermap.org/img/wn/${history.icon}.png" alt="Weather Icon">
+                                <p class="card-text">Temperature: ${history.temperature}°C</p>
+                                <p class="card-text">Description: ${history.description}</p>
+                                <p class="card-text">Date: ${history.date_time}</p>
+                            </div>
+                        `;
+                        weatherHistoryDiv.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching weather history:', error);
+                });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js" integrity="sha384-QJHtvGhmr9PwwCE64hsRa2VV6p/7FZLg9zfjEL8Q9PI5zjO77pV/urVpBbs7xX+" crossorigin="anonymous"></script>
+</body>
+</html>
